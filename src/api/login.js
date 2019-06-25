@@ -12,25 +12,47 @@ import { axios } from '@/utils/request'
  * @param parameter
  * @returns {*}
  */
-export function login (parameter) {
+export function login (username, password) {
+  const data = {
+    username,
+    password,
+    grant_type: 'password'
+  }
   return axios({
-    url: '/auth/login',
+    url: '/auth/oauth/token',
     method: 'post',
-    data: parameter
+    data,
+    transformRequest: [function (data) {
+      // Do whatever you want to transform the data
+      let ret = ''
+      for (const it in data) {
+        ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+      }
+      return ret
+    }],
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
   })
 }
 
-export function getSmsCaptcha (parameter) {
+export function getSmsCaptcha (tel) {
   return axios({
-    url: api.SendSms,
-    method: 'post',
-    data: parameter
+    url: '/admin/user/sendMsm?type=3&tel=' + tel,
+    method: 'post'
+  })
+}
+
+export function validateTelPhone (tel) {
+  return axios({
+    url: '/admin/user/validateTelPhone?tel=' + tel,
+    method: 'post'
   })
 }
 
 export function getInfo () {
   return axios({
-    url: '/user/info',
+    url: '/admin/user/front/info',
     method: 'get',
     headers: {
       'Content-Type': 'application/json;charset=UTF-8'
@@ -38,12 +60,12 @@ export function getInfo () {
   })
 }
 
-export function logout () {
+export function logout (token) {
   return axios({
-    url: '/auth/logout',
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json;charset=UTF-8'
+    url: '/auth/oauth/token',
+    method: 'delete',
+    params: {
+      access_token: token
     }
   })
 }

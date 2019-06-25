@@ -72,11 +72,11 @@
 
       <a-form-item>
         <a-checkbox v-decorator="['rememberMe']">自动登录</a-checkbox>
-        <router-link
-          :to="{ name: 'recover', params: { user: 'aaa'} }"
-          class="forge-password"
-          style="float: right;"
-        >忘记密码</router-link>
+        <!--        <router-link-->
+        <!--          :to="{ name: 'recover', params: { user: 'aaa'} }"-->
+        <!--          class="forge-password"-->
+        <!--          style="float: right;"-->
+        <!--        >忘记密码</router-link>-->
       </a-form-item>
 
       <a-form-item style="margin-top:24px">
@@ -115,11 +115,11 @@
 </template>
 
 <script>
-import md5 from 'md5'
+// import md5 from 'md5'
 import TwoStepCaptcha from '@/components/tools/TwoStepCaptcha'
 import { mapActions } from 'vuex'
 import { timeFix } from '@/utils/util'
-import { getSmsCaptcha, get2step } from '@/api/login'
+import { getSmsCaptcha, validateTelPhone, get2step } from '@/api/login'
 
 export default {
   components: {
@@ -189,7 +189,7 @@ export default {
           const loginParams = { ...values }
           delete loginParams.username
           loginParams[!state.loginType ? 'email' : 'username'] = values.username
-          loginParams.password = md5(values.password)
+          loginParams.password = values.password
           Login(loginParams)
             .then((res) => this.loginSuccess(res))
             .catch(err => this.requestFailed(err))
@@ -209,30 +209,48 @@ export default {
 
       validateFields(['mobile'], { force: true }, (err, values) => {
         if (!err) {
-          state.smsSendBtn = true
+          validateTelPhone(values.mobile).then(res => {
+            if (res.data) {
+              state.smsSendBtn = true
 
-          const interval = window.setInterval(() => {
-            if (state.time-- <= 0) {
-              state.time = 60
-              state.smsSendBtn = false
-              window.clearInterval(interval)
+              const interval = window.setInterval(() => {
+                if (state.time-- <= 0) {
+                  state.time = 60
+                  state.smsSendBtn = false
+                  window.clearInterval(interval)
+                }
+              }, 1000)
+
+              const hide = this.$message.loading('验证码发送中..', 0)
+              getSmsCaptcha(values.mobile).then(res => {
+                if (res.data) {
+                  setTimeout(hide, 2500)
+                  this.$notification['success']({
+                    message: '提示',
+                    description: '验证码获取成功',
+                    duration: 8
+                  })
+                } else {
+                  this.$notification['error']({
+                    message: '提示',
+                    description: '验证码发送失败请重试',
+                    duration: 8
+                  })
+                }
+              }).catch(err => {
+                setTimeout(hide, 1)
+                clearInterval(interval)
+                state.time = 60
+                state.smsSendBtn = false
+                this.requestFailed(err)
+              })
+            } else {
+              this.$notification['error']({
+                message: '提示',
+                description: '手机号码不存在',
+                duration: 8
+              })
             }
-          }, 1000)
-
-          const hide = this.$message.loading('验证码发送中..', 0)
-          getSmsCaptcha({ mobile: values.mobile }).then(res => {
-            setTimeout(hide, 2500)
-            this.$notification['success']({
-              message: '提示',
-              description: '验证码获取成功，您的验证码为：' + res.result.captcha,
-              duration: 8
-            })
-          }).catch(err => {
-            setTimeout(hide, 1)
-            clearInterval(interval)
-            state.time = 60
-            state.smsSendBtn = false
-            this.requestFailed(err)
           })
         }
       })
@@ -247,8 +265,7 @@ export default {
       })
     },
     loginSuccess (res) {
-      console.log(res)
-      this.$router.push({ name: 'dashboard' })
+      this.$router.push({ name: 'index' })
       // 延迟 1 秒显示欢迎信息
       setTimeout(() => {
         this.$notification.success({

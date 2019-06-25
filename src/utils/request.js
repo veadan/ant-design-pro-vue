@@ -27,8 +27,8 @@ const err = (error) => {
     }
     if (error.response.status === 401 && !(data.result && data.result.isLogin)) {
       notification.error({
-        message: 'Unauthorized',
-        description: 'Authorization verification failed'
+        message: '权限校验失败',
+        description: '校验失败或令牌已过期'
       })
       if (token) {
         store.dispatch('Logout').then(() => {
@@ -38,6 +38,12 @@ const err = (error) => {
         })
       }
     }
+    if (error.response.status === 500) {
+      notification.error({
+        message: '系统错误',
+        description: '系统参数出错'
+      })
+    }
   }
   return Promise.reject(error)
 }
@@ -45,8 +51,10 @@ const err = (error) => {
 // request interceptor
 service.interceptors.request.use(config => {
   const token = Vue.ls.get(ACCESS_TOKEN)
-  if (token) {
-    config.headers['Access-Token'] = token // 让每个请求携带自定义 token 请根据实际情况自行修改
+  if (store.getters.token) {
+    config.headers.Authorization = token // 让每个请求携带token--['X-Token']为自定义key 请根据实际情况自行修改
+  } else {
+    config.headers.Authorization = 'Basic dnVlOnZ1ZQ==' // 增加客户端认证
   }
   return config
 }, err)

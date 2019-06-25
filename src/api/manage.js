@@ -3,7 +3,7 @@ import { axios } from '@/utils/request'
 const api = {
   user: '/user',
   role: '/role',
-  service: '/service',
+  service: '/services',
   permission: '/permission',
   permissionNoPager: '/permission/no-pager',
   orgTree: '/org/tree'

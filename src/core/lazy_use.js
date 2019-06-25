@@ -4,6 +4,7 @@ import config from '@/config/defaultSettings'
 
 // base library
 import '@/core/lazy_lib/components_use'
+import '@/core/lazy_lib/components_element'
 import Viser from 'viser-vue'
 
 // ext library
